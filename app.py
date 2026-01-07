@@ -5,7 +5,7 @@ import os
 app = Flask(__name__)
 
 # 🔐 Read Gemini key from environment (Render-safe)
-GEMINI_API_KEY = os.environ.get "AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw"
+GEMINI_API_KEY = os.environ.get ("AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw")
 
 
 def generate_experience_points(raw_experience, output_language):
