@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Resume Builder</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+        }
+        textarea, input, select {
+            width: 100%;
+            margin: 10px 0;
+            padding: 10px;
+        }
+        button {
+            padding: 12px;
+            width: 100%;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            font-size: 16px;
+        }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>AI Resume Builder (MVP)</h2>
+
+<form method="POST">
+
+    <label>Full Name</label>
+    <input type="text" name="name" required>
+
+    <label>Describe your job experience (ANY language)</label>
+    <textarea name="experience" rows="6" required></textarea>
+
+    <label>Resume output language</label>
+    <select name="language">
+        <option>English</option>
+        <option>Hindi</option>
+        <option>Hinglish</option>
+    </select>
+
+    <button type="submit">Generate Resume</button>
+</form>
+
+{% if resume %}
+<h3>Preview</h3>
+<pre>{{ resume }}</pre>
+{% endif %}
+
+</body>
+</html>
