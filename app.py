@@ -3,59 +3,67 @@ import google.generativeai as genai
 
 app = Flask(__name__)
 
-# 🔑 Gemini API key (temporary for testing)
+# 🔑 Gemini API key (TEMP – OK for testing)
 genai.configure(api_key="AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw")
 
-# Try to load model
+# ✅ Load Gemini model safely
 try:
     model = genai.GenerativeModel("gemini-1.5-flash")
 except Exception:
     model = None
 
 
+# 🔁 SMART FALLBACK (never shows blank or error)
 def fallback_resume(experience, language):
-    # Smart fallback so demo NEVER fails
     return f"""
-• Worked as a {experience}, handling daily operational responsibilities
-• Maintained accuracy and efficiency in assigned tasks
-• Assisted team members and supported office workflows
-• Followed company procedures and quality standards
-• Demonstrated reliability, discipline, and willingness to learn
+• Worked as a {experience}, managing daily job responsibilities
+• Performed tasks efficiently while maintaining accuracy and productivity
+• Supported team operations and assisted with workflow coordination
+• Followed organizational procedures and safety guidelines
+• Demonstrated reliability, adaptability, and willingness to learn
 """.strip()
 
 
-def generate_experience_points(raw_experience, output_language):
+def generate_experience_points(experience, output_language):
+    # 🔥 IMPORTANT: normalize user input (PASTE HERE)
+    experience = experience.lower().strip()
+
     prompt = f"""
-You are a professional resume writer.
+You are a senior HR professional and ATS resume expert.
 
-User may write very short experience like:
-"computer operator", "office boy", "data entry"
+The user may write job experience very casually, such as:
+"computer operator", "picker at shiprocket", "warehouse helper", "data entry"
 
-Expand it professionally:
-- Add realistic responsibilities
-- Use ATS-friendly bullet points
-- 4–6 points
-- Strong action verbs
+Your task:
+- Identify the real job role and industry
+- Expand it into PROFESSIONAL resume bullet points
+- Add role-specific responsibilities (not generic)
+- Use strong action verbs
+- Make it ATS-friendly
+- Write 6–8 impactful bullet points
+- Avoid weak lines like "assisted team" or "followed rules"
 - Output ONLY in {output_language}
 
-User input:
-{raw_experience}
+User job experience:
+{experience}
 """
 
     if model is None:
-        return fallback_resume(raw_experience, output_language)
+        return fallback_resume(experience, output_language)
 
     try:
         response = model.generate_content(prompt)
         text = response.text.strip()
 
-        if not text:
-            return fallback_resume(raw_experience, output_language)
+        # If Gemini gives weak or tiny response
+        if not text or len(text) < 80:
+            return fallback_resume(experience, output_language)
 
         return text
 
-    except Exception:
-        return fallback_resume(raw_experience, output_language)
+    except Exception as e:
+        print("Gemini error:", e)
+        return fallback_resume(experience, output_language)
 
 
 @app.route("/", methods=["GET", "POST"])
