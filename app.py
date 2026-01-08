@@ -13,57 +13,68 @@ except Exception:
     model = None
 
 
-# 🔁 SMART FALLBACK (never shows blank or error)
+# 🔁 SMART FALLBACK (never shows error / blank)
 def fallback_resume(experience, language):
     return f"""
-• Worked as a {experience}, managing daily job responsibilities
-• Performed tasks efficiently while maintaining accuracy and productivity
-• Supported team operations and assisted with workflow coordination
-• Followed organizational procedures and safety guidelines
-• Demonstrated reliability, adaptability, and willingness to learn
+• Worked as a {experience} with responsibility for daily operations
+• Managed assigned tasks with accuracy and time efficiency
+• Coordinated with team members to ensure smooth workflow
+• Followed organizational policies, safety, and quality standards
+• Demonstrated reliability, adaptability, and continuous learning mindset
 """.strip()
 
 
 def generate_experience_points(experience, output_language):
-    # 🔥 IMPORTANT: normalize user input (PASTE HERE)
-    experience = experience.lower().strip()
+    experience = experience.strip()
 
-    prompt = f"""
-You are a senior HR professional and ATS resume expert.
+    # 🔥 Split multiple job experiences properly
+    experience_blocks = [
+        e.strip()
+        for e in experience.replace("\n", ".").split(".")
+        if len(e.strip()) > 5
+    ]
 
-The user may write job experience very casually, such as:
-"computer operator", "picker at shiprocket", "warehouse helper", "data entry"
+    final_output = []
+
+    for block in experience_blocks:
+        prompt = f"""
+You are a senior HR manager and ATS resume expert.
+
+The user may write job experience casually or poorly.
 
 Your task:
-- Identify the real job role and industry
-- Expand it into PROFESSIONAL resume bullet points
-- Add role-specific responsibilities (not generic)
+- Identify the correct job role and industry
+- Rewrite it as a PROFESSIONAL resume section
+- Add realistic, role-specific responsibilities
+- Avoid generic or weak points
 - Use strong action verbs
 - Make it ATS-friendly
 - Write 6–8 impactful bullet points
-- Avoid weak lines like "assisted team" or "followed rules"
 - Output ONLY in {output_language}
 
 User job experience:
-{experience}
+{block}
 """
 
-    if model is None:
-        return fallback_resume(experience, output_language)
+        if model is None:
+            final_output.append(fallback_resume(block, output_language))
+            continue
 
-    try:
-        response = model.generate_content(prompt)
-        text = response.text.strip()
+        try:
+            response = model.generate_content(prompt)
+            text = response.text.strip()
 
-        # If Gemini gives weak or tiny response
-        if not text or len(text) < 80:
-            return fallback_resume(experience, output_language)
+            # Weak response protection
+            if not text or len(text) < 120:
+                final_output.append(fallback_resume(block, output_language))
+            else:
+                final_output.append(text)
 
-        return text
+        except Exception as e:
+            print("Gemini error:", e)
+            final_output.append(fallback_resume(block, output_language))
 
-    except Exception as e:
-        print("Gemini error:", e)
-        return fallback_resume(experience, output_language)
+    return "\n\n".join(final_output)
 
 
 @app.route("/", methods=["GET", "POST"])
