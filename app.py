@@ -4,8 +4,8 @@ import os
 
 app = Flask(__name__)
 
-# 🔐 Read Gemini key from environment (Render-safe)
-GEMINI_API_KEY = os.environ.get ("AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw")
+# ✅ Correct: read Gemini key from Render environment variable
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
 
 def generate_experience_points(raw_experience, output_language):
@@ -19,19 +19,31 @@ Experience:
 {raw_experience}
 """
 
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key={GEMINI_API_KEY}"
+    url = (
+        "https://generativelanguage.googleapis.com/v1beta/models/"
+        f"gemini-pro:generateContent?key={GEMINI_API_KEY}"
+    )
 
     payload = {
         "contents": [
             {
-                "parts": [{"text": prompt}]
+                "parts": [
+                    {"text": prompt}
+                ]
             }
         ]
     }
 
     response = requests.post(url, json=payload, timeout=30)
-
     data = response.json()
+
+    # ✅ SAFE HANDLING (no crashes)
+    if "candidates" not in data:
+        return "AI could not generate content. Please try again with more details."
+
+    if not data["candidates"]:
+        return "AI response was empty. Please try again."
+
     return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
