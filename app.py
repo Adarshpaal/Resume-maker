@@ -1,21 +1,29 @@
 from flask import Flask, render_template, request
 import requests
-import os
 
 app = Flask(__name__)
 
-# ✅ Correct: read Gemini key from Render environment variable
-GEMINI_API_KEY = os.environ.get("AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw")
+# ⚠️ Hardcoded Gemini API Key (works, but not secure)
+GEMINI_API_KEY = "AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw"
 
 
 def generate_experience_points(raw_experience, output_language):
     prompt = f"""
-You are a professional resume writer.
+You are an expert resume writer and career coach.
 
-Convert the following job experience into 3–5 professional resume bullet points.
-Write ONLY in {output_language}.
+The user may provide very short or unclear job information.
+You must intelligently EXPAND it by assuming common responsibilities
+for that role and write a strong professional experience section.
 
-Experience:
+Rules:
+- Write 4–6 crisp bullet points
+- Use action verbs
+- Make it ATS-friendly
+- Do NOT ask questions
+- Do NOT mention assumptions
+- Write ONLY in {output_language}
+
+User input:
 {raw_experience}
 """
 
@@ -34,17 +42,21 @@ Experience:
         ]
     }
 
-    response = requests.post(url, json=payload, timeout=30)
-    data = response.json()
+    try:
+        response = requests.post(url, json=payload, timeout=30)
+        data = response.json()
 
-    # ✅ SAFE HANDLING (no crashes)
-    if "candidates" not in data:
-        return "AI could not generate content. Please try again with more details."
+        if (
+            "candidates" in data
+            and len(data["candidates"]) > 0
+            and "content" in data["candidates"][0]
+        ):
+            return data["candidates"][0]["content"]["parts"][0]["text"]
 
-    if not data["candidates"]:
-        return "AI response was empty. Please try again."
+        return "AI could not generate content. Please provide a little more detail."
 
-    return data["candidates"][0]["content"]["parts"][0]["text"]
+    except Exception:
+        return "Error connecting to AI service. Please try again."
 
 
 @app.route("/", methods=["GET", "POST"])
