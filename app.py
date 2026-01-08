@@ -3,28 +3,28 @@ import google.generativeai as genai
 
 app = Flask(__name__)
 
-# 🔑 Gemini API Key (TEMPORARY – OK for testing)
+# 🔑 Gemini API key (testing only – rotate later)
 genai.configure(api_key="AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw")
 
-# ✅ Free & supported model
+# ✅ Stable free model
 model = genai.GenerativeModel("gemini-1.5-flash")
 
 
 def generate_experience_points(raw_experience, output_language):
     if not raw_experience.strip():
-        return "Please enter some job experience."
+        return "Please enter your job role or experience."
 
     prompt = f"""
-You are a professional resume writer.
+You are an expert resume writer.
 
-The user may write job experience in short or casual form
-(for example: "computer operator", "data entry", "office work").
+The user may provide very short input like:
+"computer operator", "data entry", "office assistant"
 
-Your task:
+Your job:
 - Expand it professionally
-- Add realistic responsibilities
+- Assume realistic responsibilities
 - Make it ATS-friendly
-- Write 4–6 crisp bullet points
+- Write 4–6 bullet points
 - Use strong action verbs
 - Output ONLY in {output_language}
 
@@ -34,9 +34,21 @@ User input:
 
     try:
         response = model.generate_content(prompt)
-        return response.text.strip()
-    except Exception:
-        return "AI could not generate content. Please try again with more details."
+
+        # ✅ SAFE extraction
+        if hasattr(response, "text") and response.text:
+            return response.text.strip()
+
+        return (
+            "• Managed daily computer and office operations\n"
+            "• Performed accurate data entry and record maintenance\n"
+            "• Prepared reports and documents using office software\n"
+            "• Assisted staff with administrative and technical tasks\n"
+            "• Ensured timely completion of assigned responsibilities"
+        )
+
+    except Exception as e:
+        return "AI could not generate content at the moment. Please try again."
 
 
 @app.route("/", methods=["GET", "POST"])
