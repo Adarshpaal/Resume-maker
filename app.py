@@ -1,16 +1,12 @@
 from flask import Flask, render_template, request
 import google.generativeai as genai
-import os
 
 app = Flask(__name__)
 
-# ✅ Read API key from environment (Render-safe)
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+# 🔑 Gemini API Key (TEMPORARY – works immediately)
+genai.configure(api_key="AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw")
 
-# ✅ Configure Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-
-# ✅ Load model (this WORKS with free keys)
+# ✅ Correct free model
 model = genai.GenerativeModel("gemini-1.5-flash")
 
 
@@ -18,12 +14,15 @@ def generate_experience_points(raw_experience, output_language):
     prompt = f"""
 You are a professional resume writer.
 
-The user will describe their job briefly (even one line).
+The user may write job experience in short or casual form
+(for example: "computer operator", "data entry", "office work").
+
 Your task:
 - Expand it professionally
 - Add realistic responsibilities
+- Make it ATS-friendly
 - Write 4–6 crisp bullet points
-- Use strong resume language
+- Use strong action verbs
 - Output ONLY in {output_language}
 
 User input:
@@ -34,7 +33,7 @@ User input:
         response = model.generate_content(prompt)
         return response.text.strip()
     except Exception as e:
-        return f"AI Error: {str(e)}"
+        return "AI could not generate content. Please try again."
 
 
 @app.route("/", methods=["GET", "POST"])
