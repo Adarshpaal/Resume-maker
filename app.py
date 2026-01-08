@@ -3,18 +3,18 @@ import requests
 
 app = Flask(__name__)
 
-# ⚠️ Hardcoded Gemini API key (works, not secure)
+# ✅ Gemini API Key (hardcoded for now)
 GEMINI_API_KEY = "AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw"
 
 
 def generate_experience_points(raw_experience, output_language):
     prompt = f"""
-You are a professional resume writer.
+You are an expert resume writer.
 
-The user may provide very short job information.
+The user may give very short input like a job title.
 You must intelligently expand it with realistic responsibilities.
 
-Write 4–6 strong, ATS-friendly bullet points.
+Write 4–6 strong, professional, ATS-friendly bullet points.
 Do NOT ask questions.
 Do NOT mention assumptions.
 Write ONLY in {output_language}.
@@ -25,13 +25,15 @@ User input:
 
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/"
-        f"gemini-pro:generateContent?key={GEMINI_API_KEY}"
+        f"gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
     )
 
     payload = {
         "contents": [
             {
-                "parts": [{"text": prompt}]
+                "parts": [
+                    {"text": prompt}
+                ]
             }
         ]
     }
@@ -40,18 +42,15 @@ User input:
         response = requests.post(url, json=payload, timeout=30)
         data = response.json()
 
-        # ✅ DEBUG SAFETY (handles all Gemini formats)
+        # ✅ Universal safe parsing
         if "candidates" in data and len(data["candidates"]) > 0:
-            candidate = data["candidates"][0]
+            content = data["candidates"][0].get("content", {})
+            parts = content.get("parts", [])
+            if parts and "text" in parts[0]:
+                return parts[0]["text"]
 
-            if "content" in candidate and "parts" in candidate["content"]:
-                parts = candidate["content"]["parts"]
-                if len(parts) > 0 and "text" in parts[0]:
-                    return parts[0]["text"]
-
-        # If Gemini responds with error message
         if "error" in data:
-            return f"AI Error: {data['error'].get('message', 'Unknown error')}"
+            return f"AI Error: {data['error'].get('message')}"
 
         return "AI could not generate content. Please provide a little more detail."
 
