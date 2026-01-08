@@ -3,25 +3,21 @@ import requests
 
 app = Flask(__name__)
 
-# ⚠️ Hardcoded Gemini API Key (works, but not secure)
+# ⚠️ Hardcoded Gemini API key (works, not secure)
 GEMINI_API_KEY = "AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw"
 
 
 def generate_experience_points(raw_experience, output_language):
     prompt = f"""
-You are an expert resume writer and career coach.
+You are a professional resume writer.
 
-The user may provide very short or unclear job information.
-You must intelligently EXPAND it by assuming common responsibilities
-for that role and write a strong professional experience section.
+The user may provide very short job information.
+You must intelligently expand it with realistic responsibilities.
 
-Rules:
-- Write 4–6 crisp bullet points
-- Use action verbs
-- Make it ATS-friendly
-- Do NOT ask questions
-- Do NOT mention assumptions
-- Write ONLY in {output_language}
+Write 4–6 strong, ATS-friendly bullet points.
+Do NOT ask questions.
+Do NOT mention assumptions.
+Write ONLY in {output_language}.
 
 User input:
 {raw_experience}
@@ -35,9 +31,7 @@ User input:
     payload = {
         "contents": [
             {
-                "parts": [
-                    {"text": prompt}
-                ]
+                "parts": [{"text": prompt}]
             }
         ]
     }
@@ -46,17 +40,23 @@ User input:
         response = requests.post(url, json=payload, timeout=30)
         data = response.json()
 
-        if (
-            "candidates" in data
-            and len(data["candidates"]) > 0
-            and "content" in data["candidates"][0]
-        ):
-            return data["candidates"][0]["content"]["parts"][0]["text"]
+        # ✅ DEBUG SAFETY (handles all Gemini formats)
+        if "candidates" in data and len(data["candidates"]) > 0:
+            candidate = data["candidates"][0]
+
+            if "content" in candidate and "parts" in candidate["content"]:
+                parts = candidate["content"]["parts"]
+                if len(parts) > 0 and "text" in parts[0]:
+                    return parts[0]["text"]
+
+        # If Gemini responds with error message
+        if "error" in data:
+            return f"AI Error: {data['error'].get('message', 'Unknown error')}"
 
         return "AI could not generate content. Please provide a little more detail."
 
-    except Exception:
-        return "Error connecting to AI service. Please try again."
+    except Exception as e:
+        return f"AI connection error: {str(e)}"
 
 
 @app.route("/", methods=["GET", "POST"])
