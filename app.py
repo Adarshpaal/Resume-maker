@@ -13,21 +13,23 @@ except Exception:
     model = None
 
 
-# 🔁 SMART FALLBACK (never shows error / blank)
-def fallback_resume(experience, language):
+# 🔁 ROLE-AWARE FALLBACK (used ONLY if Gemini fails)
+def fallback_resume(role, language):
     return f"""
-• Worked as a {experience} with responsibility for daily operations
-• Managed assigned tasks with accuracy and time efficiency
-• Coordinated with team members to ensure smooth workflow
-• Followed organizational policies, safety, and quality standards
-• Demonstrated reliability, adaptability, and continuous learning mindset
+• Held the position of {role} with responsibility for core role-specific tasks
+• Executed duties using industry-standard tools and operational procedures
+• Maintained accuracy, efficiency, and accountability under deadlines
+• Coordinated with cross-functional teams to meet business objectives
+• Identified and resolved operational issues proactively
+• Demonstrated strong work ethic, adaptability, and professional growth
 """.strip()
 
 
 def generate_experience_points(experience, output_language):
-    experience = experience.strip()
+    # ✅ NORMALIZE INPUT (THIS IS WHERE IT GOES)
+    experience = experience.strip().lower()
 
-    # 🔥 Split multiple job experiences properly
+    # 🔥 Split multiple roles correctly
     experience_blocks = [
         e.strip()
         for e in experience.replace("\n", ".").split(".")
@@ -38,22 +40,34 @@ def generate_experience_points(experience, output_language):
 
     for block in experience_blocks:
         prompt = f"""
-You are a senior HR manager and ATS resume expert.
+You are a senior hiring manager who has hired people for THIS EXACT ROLE.
 
-The user may write job experience casually or poorly.
+Candidate job description:
+"{block}"
 
-Your task:
-- Identify the correct job role and industry
-- Rewrite it as a PROFESSIONAL resume section
-- Add realistic, role-specific responsibilities
-- Avoid generic or weak points
+STRICT RULES:
+- DO NOT write generic duties
+- DO NOT reuse same bullet structure across roles
+- Infer tools, systems, KPIs, environment from role
+- Write REALISTIC, role-specific work
 - Use strong action verbs
-- Make it ATS-friendly
-- Write 6–8 impactful bullet points
+- ATS-friendly language
+- 6–8 bullets
+- Each bullet must be UNIQUE and professional
 - Output ONLY in {output_language}
 
-User job experience:
-{block}
+BAD (do NOT use):
+❌ daily operations
+❌ supported team
+❌ followed policies
+
+GOOD (role dependent):
+✔ inventory reconciliation (warehouse)
+✔ staff scheduling & escalation handling (manager)
+✔ ERP / WMS / CRM usage
+✔ reporting, audits, SLA tracking
+
+NOW WRITE PROFESSIONAL EXPERIENCE:
 """
 
         if model is None:
@@ -64,11 +78,16 @@ User job experience:
             response = model.generate_content(prompt)
             text = response.text.strip()
 
-            # Weak response protection
-            if not text or len(text) < 120:
-                final_output.append(fallback_resume(block, output_language))
-            else:
-                final_output.append(text)
+            # 🚨 QUALITY GATE (prevents weak output)
+            if (
+                not text
+                or len(text) < 200
+                or "daily operations" in text.lower()
+                or "supported" in text.lower()
+            ):
+                raise ValueError("Weak Gemini output")
+
+            final_output.append(text)
 
         except Exception as e:
             print("Gemini error:", e)
