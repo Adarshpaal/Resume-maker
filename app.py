@@ -3,61 +3,65 @@ import google.generativeai as genai
 
 app = Flask(__name__)
 
-# 🔑 Gemini API key (testing OK)
+# 🔑 Gemini API key (testing)
 genai.configure(api_key="AIzaSyDSHsNt7aA9cpLhszY6HOwq_PSXlPTItyw")
 
-# ✅ Load Gemini model safely
+# Load Gemini safely
 try:
     model = genai.GenerativeModel("gemini-1.5-flash")
 except Exception:
     model = None
 
 
-# 🔁 Fallback (ONLY if Gemini fails)
-def fallback_experience(title, company, years):
+def fallback_experience(title, company, years, responsibilities):
     return f"""
-• Served as {title} at {company}, responsible for day-to-day operations  
-• Coordinated tasks to ensure smooth workflow and operational efficiency  
-• Maintained accuracy, discipline, and adherence to company standards  
-• Supported team members and assisted supervisors in daily activities  
-• Demonstrated reliability, accountability, and continuous learning
+{title} – {company} ({years})
+• Managed core responsibilities related to {responsibilities}
+• Executed daily operational tasks with accuracy and efficiency
+• Coordinated with cross-functional teams to meet performance goals
+• Maintained compliance with company processes and quality standards
+• Demonstrated accountability, adaptability, and continuous improvement
 """.strip()
 
 
-def generate_experience_block(title, company, years, language):
+def generate_experience_block(title, company, years, responsibilities, language):
     prompt = f"""
-You are a senior HR manager and ATS resume specialist.
+You are a senior HR manager and ATS resume expert.
 
-Write PROFESSIONAL resume bullet points for the following role.
+Create a PROFESSIONAL resume experience section.
 
 STRICT RULES:
-- Role-specific responsibilities (NO generic lines)
+- Understand the ROLE and INDUSTRY
+- Write role-specific responsibilities (NOT generic)
 - Use strong action verbs
 - Add measurable impact where realistic
 - ATS-friendly language
 - 6–8 bullet points
-- Avoid phrases like "assisted team", "followed rules"
+- No weak phrases like "assisted team" or "followed rules"
 - Output ONLY in {language}
 
 Job Title: {title}
 Company: {company}
-Experience Duration: {years}
+Duration: {years}
+
+User responsibilities / context:
+{responsibilities}
 """
 
     if model is None:
-        return fallback_experience(title, company, years)
+        return fallback_experience(title, company, years, responsibilities)
 
     try:
         response = model.generate_content(prompt)
         text = response.text.strip()
 
-        if not text or len(text) < 150:
-            return fallback_experience(title, company, years)
+        if not text or len(text) < 200:
+            return fallback_experience(title, company, years, responsibilities)
 
-        return text
+        return f"{title} – {company} ({years})\n{text}"
 
     except Exception:
-        return fallback_experience(title, company, years)
+        return fallback_experience(title, company, years, responsibilities)
 
 
 @app.route("/", methods=["GET", "POST"])
@@ -71,24 +75,23 @@ def home():
         titles = request.form.getlist("title[]")
         companies = request.form.getlist("company[]")
         years = request.form.getlist("years[]")
+        responsibilities = request.form.getlist("responsibilities[]")
 
         experience_sections = []
 
         for i in range(len(titles)):
             if titles[i].strip():
-                section = generate_experience_block(
+                block = generate_experience_block(
                     titles[i].strip(),
                     companies[i].strip(),
                     years[i].strip(),
+                    responsibilities[i].strip(),
                     language
                 )
-                experience_sections.append(f"""
-{titles[i]} – {companies[i]} ({years[i]})
-{section}
-""")
+                experience_sections.append(block)
 
         resume_output = f"""
-Name: {name}
+{name}
 
 PROFESSIONAL EXPERIENCE
 {chr(10).join(experience_sections)}
