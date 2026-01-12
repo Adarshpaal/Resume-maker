@@ -27,28 +27,26 @@ def fallback_experience(title, company, years):
 
 def generate_experience_block(title, company, years, responsibilities, language):
     prompt = f"""
-You are a PROFESSIONAL HR AI built ONLY for resume writing.
+You are an elite HR professional who writes resumes that impress senior recruiters.
 
-THINK BEFORE WRITING (do not show thinking):
-- Identify the job role and seniority
-- Identify the industry from title/company
-- Identify key responsibility areas from context
-- Convert them into STRONG, NON-GENERIC resume bullets
-- Ensure each bullet highlights a DIFFERENT skill or impact
+You MUST follow these rules strictly:
 
-STRICT RULES:
-- No repeated ideas
-- No generic phrases
-- No filler content
-- No copying the input text
-- ATS-optimized language
-- 6 to 8 bullet points
-- Strong action verbs
-- Sounds like written by an experienced professional
+ROLE ANALYSIS (internal):
+- Identify the exact job function (example: warehouse ops vs cinema ops)
+- Identify the working environment (warehouse / cinema / retail / logistics)
+- Identify the primary responsibility domain (inventory, safety, customers, systems, people)
 
-OUTPUT FORMAT:
-- Bullet points only
-- No headings
+OUTPUT RULES (MANDATORY):
+- Each job MUST have UNIQUE bullet points
+- You are FORBIDDEN from reusing the same bullet idea across different jobs
+- Every bullet must clearly reflect the job environment
+- If the job is cinema-related, mention crowd safety, customer experience, compliance
+- If the job is warehouse-related, mention inventory flow, logistics, accuracy, coordination
+- NO generic operational statements
+- NO vague phrases like "fast-paced role" or "handled responsibilities"
+- Use professional, ATS-optimized language
+- 6 to 8 bullet points ONLY
+- Bullet points ONLY, no headings
 - Output ONLY in {language}
 
 JOB DETAILS:
@@ -56,7 +54,7 @@ Title: {title}
 Company: {company}
 Duration: {years}
 
-USER CONTEXT (for understanding only):
+USER CONTEXT (for understanding only, DO NOT COPY):
 {responsibilities}
 """
 
